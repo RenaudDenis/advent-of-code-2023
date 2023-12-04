@@ -23,22 +23,23 @@ struct Game {
 
 impl Game {
     fn parse(line: &str) -> Result<Game> {
-        let split = line.find(':').unwrap();
+        let mut split = line.splitn(2, ": ");
+        let (game_string, sets_string) = (split.next().unwrap(), split.next().unwrap());
 
-        let index = u32::from_str(&line[5..split])?;
+        let index = u32::from_str(&game_string[5..])?;
 
         let mut sets= Vec::new();
-        for set_string in line[split + 2..].split(';') {
+        for set_string in sets_string.split("; ") {
             let mut set = CubeSet::default();
-            for cube_string in set_string.split(',') {
+            for cube_string in set_string.split(", ") {
                 if cube_string.ends_with("red") {
-                    let number = &cube_string[..cube_string.len() - "red".len()].trim();
+                    let number = &cube_string.strip_suffix(" red").unwrap();
                     set.0 += u32::from_str(number)?;
                 } else if cube_string.ends_with("green") {
-                    let number = &cube_string[..cube_string.len() - "green".len()].trim();
+                    let number =  &cube_string.strip_suffix(" green").unwrap();
                     set.1 += u32::from_str(number)?;
                 } else if cube_string.ends_with("blue") {
-                    let number = &cube_string[..cube_string.len() - "blue".len()].trim();
+                    let number =  &cube_string.strip_suffix(" blue").unwrap();
                     set.2 += u32::from_str(number)?;
                 }
             }
@@ -60,6 +61,10 @@ impl Game {
         }
         minimal
     }
+
+    fn possible_for(&self, bag: &CubeSet) -> bool {
+        self.sets.iter().all(|set| set.can_be_drawn_from(bag))
+    }
 }
 
 fn main() -> Result<()> {
@@ -73,7 +78,7 @@ fn main() -> Result<()> {
                 let game = Game::parse(&ip)?;
 
                 // Part 1
-                let possible = game.sets.iter().all(|set| set.can_be_drawn_from(&bag));
+                let possible = game.possible_for(&bag);
                 if possible {
                     sum1 += game.index;
                 }
